@@ -30,9 +30,9 @@ class SpriteSheetBuilder
       if supported
         crushed = "#{ image }.crushed"
         console.log "\n  pngcrushing, this may take a few moments...\n"
-        movecmd = if process.platform != "win32" then "mv" else "move"
-        exec "pngcrush -reduce #{ image } #{ crushed } && #{ movecmd } #{ crushed } #{ image }", ( error, stdout, stderr ) =>
-          callback()
+        exec "pngcrush -reduce #{ image } #{ crushed }", ( error ) =>
+          if error is null
+            fs.rename crushed, image, callback
       else
         callback()
 
@@ -51,12 +51,12 @@ class SpriteSheetBuilder
     return builder
 
   constructor: ( @options ) ->
-    @files = options.images
+    @files = [@sanitizePath image for image in options.images]
     @outputConfigurations = {}
-    @outputDirectory = path.normalize( options.outputDirectory )
+    @outputDirectory = @sanitizePath path.normalize( options.outputDirectory )
     
     if options.outputCss
-      @outputStyleFilePath        = [ @outputDirectory, options.outputCss ].join( separator )
+      @outputStyleFilePath        = @sanitizePath [ @outputDirectory, options.outputCss ].join( separator )
       @outputStyleDirectoryPath   = path.dirname( @outputStyleFilePath )
 
   addConfiguration: ( name, options ) ->
@@ -109,6 +109,9 @@ class SpriteSheetBuilder
   
   buildConfig: ( config, callback ) =>
     config.build( callback )
+
+  sanitizePath: ( p ) =>
+    p.replace /[\\\/]/g, seperator
 
   writeStyleSheet: ( callback ) =>
     css = @configs.map ( config ) -> config.css

@@ -1,4 +1,5 @@
 exec          = require( 'child_process' ).exec
+fs            = require( 'fs' )
 async         = require( 'async' )
 
 class ImageMagick
@@ -63,18 +64,12 @@ class ImageMagick
     if downsampling
       command += "-filter #{ downsampling }"
       
-    movecmd = if process.platform != "win32" then "mv" else "move"  
-    command += "
-      #{ image.path } #{ filepath } #{ filepath }.tmp
-      
-      &&
-      #{ movecmd } #{ filepath }.tmp #{ filepath }
-    "
+    command += "#{ image.path } #{ filepath } #{ filepath }.tmp"
   
     exec command, ( error, stdout, stderr ) ->
       if error or stderr
         throw "Error in composite (#{ filepath }): #{ error || stderr }"
-      
-      callback()
+
+      fs.rename "#{ filepath }.tmp", filepath, callback
 
 module.exports = new ImageMagick()
